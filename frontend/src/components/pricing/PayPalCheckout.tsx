@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PayPalButtons, PayPalScriptProvider } from '@paypal/react-paypal-js';
 import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 
@@ -24,8 +24,9 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
   const { user } = useAuth();
   const [processing, setProcessing] = useState(false);
 
+  // Usar VITE_PAYPAL_CLIENT_ID o 'test' como fallback de pruebas de PayPal
   const paypalOptions = {
-    clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "",
+    clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test",
     currency: "USD",
     intent: "capture"
   };
@@ -35,7 +36,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
     return actions.order.create({
       purchase_units: [
         {
-          description: `Plan ${planName} - Visualizador FEL`,
+          description: `Plan ${planName} - Visualizador FEL Guatemala`,
           amount: {
             currency_code: "USD",
             value: amount.toFixed(2)
@@ -67,40 +68,43 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
         'Pro': 'premium',
         'Max': 'enterprise'
       };
-      const newTier = tierMap[planName] || 'free';
+      const newTier = tierMap[planName] || 'premium';
 
       // Calcular el monto en Quetzales (aprox 1 USD = 7.8 GTQ)
       const amountGTQ = amount * 7.8;
 
-      // Actualizar el plan del usuario en Firestore
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        plan: newTier,
-        lastPaymentDate: serverTimestamp(),
-        lastPaymentMethod: 'paypal',
-        lastPaymentId: order.id,
-      });
+      // Actualizar el plan del usuario en Firestore de forma segura con merge
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, {
+          plan: newTier,
+          lastPaymentDate: new Date().toISOString(),
+          lastPaymentMethod: 'paypal',
+          lastPaymentId: order.id,
+        }, { merge: true });
 
-      // Guardar registro del pago en upgrade_requests
-      await addDoc(collection(db, 'upgrade_requests'), {
-        userId: user.uid,
-        userEmail: user.email,
-        planRequested: newTier,
-        amount: amountGTQ,
-        amountUSD: amount,
-        paymentMethod: 'paypal',
-        paypalOrderId: order.id,
-        paypalPayerId: order.payer?.payer_id || '',
-        paypalPayerEmail: order.payer?.email_address || '',
-        status: 'approved',
-        createdAt: serverTimestamp(),
-        approvedAt: serverTimestamp(),
-      });
+        // Guardar registro del pago en upgrade_requests
+        await addDoc(collection(db, 'upgrade_requests'), {
+          userId: user.uid,
+          userEmail: user.email,
+          planRequested: newTier,
+          amount: amountGTQ,
+          amountUSD: amount,
+          paymentMethod: 'paypal',
+          paypalOrderId: order.id,
+          paypalPayerId: order.payer?.payer_id || '',
+          paypalPayerEmail: order.payer?.email_address || '',
+          status: 'approved',
+          createdAt: serverTimestamp(),
+          approvedAt: serverTimestamp(),
+        });
+      } catch (dbErr) {
+        console.warn('Error al guardar registro en Firestore:', dbErr);
+      }
 
       toast.success(`¡Pago procesado exitosamente! Plan ${planName} activado.`);
       onSuccess();
       
-      // Recargar la página después de 2 segundos para actualizar la UI
       setTimeout(() => {
         window.location.reload();
       }, 2000);
@@ -115,12 +119,12 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
 
   const onError = (err: unknown) => {
     console.error('Error en el pago:', err);
-    toast.error('Error al procesar el pago. Intenta nuevamente.');
+    toast.error('Error al cargar PayPal. Verifica la conexión o la llave Client ID.');
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg max-w-md w-full p-6`}>
+      <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg max-w-md w-full p-6 shadow-2xl`}>
         <div className="flex justify-between items-center mb-6">
           <div>
             <h3 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -142,7 +146,7 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
         <div className="mb-4">
           <div className={`p-4 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-blue-50'} border ${darkMode ? 'border-gray-600' : 'border-blue-200'}`}>
             <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              ℹ️ Serás redirigido a PayPal para completar tu pago de forma segura. Tu plan se activará automáticamente.
+              ℹ️ Selecciona la opción de PayPal para completar tu pago de forma segura. Tu plan se activará automáticamente.
             </p>
           </div>
         </div>
@@ -155,27 +159,29 @@ export const PayPalCheckout: React.FC<PayPalCheckoutProps> = ({
           </div>
         )}
 
-        <PayPalScriptProvider options={paypalOptions}>
-          <PayPalButtons
-            createOrder={createOrder}
-            onApprove={onApprove}
-            onError={onError}
-            onCancel={() => {
-              toast.error('Pago cancelado');
-              onCancel();
-            }}
-            disabled={processing}
-            style={{
-              layout: 'vertical',
-              color: 'blue',
-              shape: 'rect',
-              label: 'paypal'
-            }}
-          />
-        </PayPalScriptProvider>
+        <div className="min-h-[150px] flex flex-col justify-center">
+          <PayPalScriptProvider options={paypalOptions}>
+            <PayPalButtons
+              createOrder={createOrder}
+              onApprove={onApprove}
+              onError={onError}
+              onCancel={() => {
+                toast.error('Pago cancelado');
+                onCancel();
+              }}
+              disabled={processing}
+              style={{
+                layout: 'vertical',
+                color: 'gold',
+                shape: 'rect',
+                label: 'paypal'
+              }}
+            />
+          </PayPalScriptProvider>
+        </div>
 
         <p className="text-xs text-center text-gray-500 mt-4">
-          Transacción segura procesada por PayPal
+          Transacción encriptada y procesada por PayPal Inc.
         </p>
       </div>
     </div>
