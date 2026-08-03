@@ -144,19 +144,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const register = async (email: string, password: string, displayName: string) => {
+    const isSuperAdmin = email.toLowerCase() === 'xirmoll@gmail.com';
+    const plan = isSuperAdmin ? 'enterprise' : 'free';
+    const invoiceLimit = isSuperAdmin ? 999999 : 10;
+
     try {
       if (auth && import.meta.env.VITE_FIREBASE_API_KEY) {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const newUserData: UserData = {
           email,
           displayName,
-          plan: 'free',
+          plan,
           invoiceCount: 0,
-          invoiceLimit: 10,
+          invoiceLimit,
           createdAt: new Date().toISOString()
         };
         try {
-          await setDoc(doc(db, 'users', userCredential.user.uid), newUserData);
+          await setDoc(doc(db, 'users', userCredential.user.uid), newUserData, { merge: true });
         } catch (e) {
           console.warn('Firestore setDoc omitido (modo local activo)');
         }
@@ -172,15 +176,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newUserData: UserData = {
       email,
       displayName,
-      plan: 'free',
+      plan,
       invoiceCount: 0,
-      invoiceLimit: 10,
+      invoiceLimit,
       createdAt: new Date().toISOString()
     };
     saveLocalAuth({ uid: mockUid, email }, newUserData);
   };
 
   const login = async (email: string, password: string) => {
+    const isSuperAdmin = email.toLowerCase() === 'xirmoll@gmail.com';
+    const plan = isSuperAdmin ? 'enterprise' : 'free';
+    const invoiceLimit = isSuperAdmin ? 999999 : 10;
+
     try {
       if (auth && import.meta.env.VITE_FIREBASE_API_KEY) {
         await signInWithEmailAndPassword(auth, email, password);
@@ -195,9 +203,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const mockUserData: UserData = {
       email,
       displayName: email.split('@')[0],
-      plan: 'free',
+      plan,
       invoiceCount: 0,
-      invoiceLimit: 10,
+      invoiceLimit,
       createdAt: new Date().toISOString()
     };
     saveLocalAuth({ uid: mockUid, email }, mockUserData);

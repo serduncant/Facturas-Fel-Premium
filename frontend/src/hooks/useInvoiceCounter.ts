@@ -1,12 +1,18 @@
-import { doc, updateDoc, increment, getDoc } from 'firebase/firestore';
+import { doc, setDoc, increment, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 export const incrementInvoiceCount = async (userId: string): Promise<void> => {
-  const userRef = doc(db, 'users', userId);
-  await updateDoc(userRef, {
-    invoiceCount: increment(1),
-    lastInvoiceDate: new Date().toISOString()
-  });
+  if (!userId) return;
+  try {
+    const userRef = doc(db, 'users', userId);
+    // Usar setDoc con merge: true en lugar de updateDoc para evitar errores si el documento no existe en Firestore aún
+    await setDoc(userRef, {
+      invoiceCount: increment(1),
+      lastInvoiceDate: new Date().toISOString()
+    }, { merge: true });
+  } catch (error) {
+    console.warn('Incremento de contador en Firestore omitido o no encontrado (modo seguro local):', error);
+  }
 };
 
 export const canProcessInvoice = (invoiceCount: number, invoiceLimit: number): boolean => {
@@ -18,26 +24,29 @@ export const getRemainingInvoices = (invoiceCount: number, invoiceLimit: number)
 };
 
 export const getUsagePercentage = (invoiceCount: number, invoiceLimit: number): number => {
-  if (invoiceLimit === 999999) return 0; // Ilimitado
+  if (invoiceLimit >= 999999) return 0; // Ilimitado
   return (invoiceCount / invoiceLimit) * 100;
 };
 
-// Función para resetear el contador mensualmente (llamar desde un cron job o Cloud Function)
 export const resetMonthlyInvoiceCount = async (userId: string): Promise<void> => {
-  const userRef = doc(db, 'users', userId);
-  const userDoc = await getDoc(userRef);
-  
-  if (userDoc.exists()) {
-    const userData = userDoc.data();
-    const lastReset = userData.lastCounterReset ? new Date(userData.lastCounterReset) : null;
-    const now = new Date();
+  if (!userId) return;
+  try {
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
     
-    // Si ha pasado un mes desde el último reset
-    if (!lastReset || (now.getTime() - lastReset.getTime()) > 30 * 24 * 60 * 60 * 1000) {
-      await updateDoc(userRef, {
-        invoiceCount: 0,
-        lastCounterReset: now.toISOString()
-      });
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      const lastReset = userData.lastCounterReset ? new Date(userData.lastCounterReset) : null;
+      const now = new Date();
+      
+      if (!lastReset || (now.getTime() - lastReset.getTime()) > 30 * 24 * 60 * 60 * 1000) {
+        await updateDoc(userRef, {
+          invoiceCount: 0,
+          lastCounterReset: now.toISOString()
+        });
+      }
     }
+  } catch (error) {
+    console.warn('Reset mensual omitido:', error);
   }
 };
