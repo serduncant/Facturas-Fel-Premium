@@ -1,15 +1,13 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 export const generatePDF = async (element, invoice, format = 'carta') => {
+    // Preservar la cadena cssText exacta de la pantalla
+    const originalCssText = element.style.cssText;
     try {
-        // Guardar estilos originales del contenedor
         const originalWidth = element.style.width;
         const originalMaxWidth = element.style.maxWidth;
         const originalTransform = element.style.transform;
-        const originalBoxShadow = element.style.boxShadow;
-        const originalBorder = element.style.border;
-        const originalBorderRadius = element.style.borderRadius;
-        // Forzar ancho según formato y remover sombras/bordes exteriores de tarjeta para PDF limpio
+        // Ajustar temporalmente ancho y remover sombras/bordes para el PDF sin alterar la vista en pantalla permanente
         const targetWidth = format === 'mediaCarta' ? '396pt' : '612pt';
         element.style.width = targetWidth;
         element.style.maxWidth = targetWidth;
@@ -33,13 +31,6 @@ export const generatePDF = async (element, invoice, format = 'carta') => {
             windowWidth: elementWidth,
             windowHeight: elementHeight
         });
-        // Restaurar estilos originales de la interfaz en pantalla
-        element.style.width = originalWidth;
-        element.style.maxWidth = originalMaxWidth;
-        element.style.transform = originalTransform;
-        element.style.boxShadow = originalBoxShadow;
-        element.style.border = originalBorder;
-        element.style.borderRadius = originalBorderRadius;
         if (canvas.width === 0 || canvas.height === 0) {
             throw new Error('Canvas vacío - no se pudo capturar la factura');
         }
@@ -47,7 +38,7 @@ export const generatePDF = async (element, invoice, format = 'carta') => {
         if (imgData === 'data:,') {
             throw new Error('Imagen vacía - no se pudo generar el PDF');
         }
-        // Configurar PDF según formato sin marcos de borde exterior
+        // Configurar PDF según formato
         let pdfConfig;
         let pdfWidth;
         let pdfHeight;
@@ -82,10 +73,14 @@ export const generatePDF = async (element, invoice, format = 'carta') => {
         pdf.addImage(imgData, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
         const fileName = `Factura-${invoice.serie}-${invoice.numero}.pdf`;
         pdf.save(fileName);
-        console.log('PDF generado exitosamente sin bordes exteriores');
+        console.log('PDF generado exitosamente sin alterar la interfaz');
     }
     catch (error) {
         console.error('Error generating PDF:', error);
         throw new Error('Error al generar el PDF. Intenta de nuevo.');
+    }
+    finally {
+        // Restaurar incondicionalmente el estilo exacto de la pantalla
+        element.style.cssText = originalCssText;
     }
 };
