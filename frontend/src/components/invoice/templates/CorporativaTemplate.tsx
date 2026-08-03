@@ -29,7 +29,7 @@ export const CorporativaTemplate: React.FC<CorporativaTemplateProps> = ({
 
   return (
     <div 
-      className={`${containerClass} mx-auto bg-white p-8 md:p-10 shadow-2xl invoice-preview rounded-xl text-slate-900 font-sans`}
+      className={`${containerClass} mx-auto bg-white p-8 md:p-10 shadow-2xl print:shadow-none print:border-0 print:rounded-none invoice-preview rounded-xl text-slate-900 font-sans`}
       style={{ border: `1px solid ${borderColor}` }}
     >
       {/* Header Corporativo Elegante con Color Personalizable */}

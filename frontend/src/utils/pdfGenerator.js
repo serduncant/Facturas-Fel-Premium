@@ -2,14 +2,21 @@ import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 export const generatePDF = async (element, invoice, format = 'carta') => {
     try {
+        // Guardar estilos originales del contenedor
         const originalWidth = element.style.width;
         const originalMaxWidth = element.style.maxWidth;
         const originalTransform = element.style.transform;
-        // Forzar ancho según formato
+        const originalBoxShadow = element.style.boxShadow;
+        const originalBorder = element.style.border;
+        const originalBorderRadius = element.style.borderRadius;
+        // Forzar ancho según formato y remover sombras/bordes exteriores de tarjeta para PDF limpio
         const targetWidth = format === 'mediaCarta' ? '396pt' : '612pt';
         element.style.width = targetWidth;
         element.style.maxWidth = targetWidth;
         element.style.transform = 'scale(1)';
+        element.style.boxShadow = 'none';
+        element.style.border = 'none';
+        element.style.borderRadius = '0';
         await new Promise(resolve => setTimeout(resolve, 300));
         const elementWidth = element.offsetWidth;
         const elementHeight = element.offsetHeight;
@@ -26,9 +33,13 @@ export const generatePDF = async (element, invoice, format = 'carta') => {
             windowWidth: elementWidth,
             windowHeight: elementHeight
         });
+        // Restaurar estilos originales de la interfaz en pantalla
         element.style.width = originalWidth;
         element.style.maxWidth = originalMaxWidth;
         element.style.transform = originalTransform;
+        element.style.boxShadow = originalBoxShadow;
+        element.style.border = originalBorder;
+        element.style.borderRadius = originalBorderRadius;
         if (canvas.width === 0 || canvas.height === 0) {
             throw new Error('Canvas vacío - no se pudo capturar la factura');
         }
@@ -36,12 +47,11 @@ export const generatePDF = async (element, invoice, format = 'carta') => {
         if (imgData === 'data:,') {
             throw new Error('Imagen vacía - no se pudo generar el PDF');
         }
-        // Configurar PDF según formato
+        // Configurar PDF según formato sin marcos de borde exterior
         let pdfConfig;
         let pdfWidth;
         let pdfHeight;
         if (format === 'mediaCarta') {
-            // Media carta VERTICAL: 5.5" x 8.5" = 396pt x 612pt
             pdfConfig = {
                 orientation: 'portrait',
                 unit: 'pt',
@@ -51,7 +61,6 @@ export const generatePDF = async (element, invoice, format = 'carta') => {
             pdfHeight = 612;
         }
         else {
-            // Carta VERTICAL: 8.5" x 11" = 612pt x 792pt
             pdfConfig = {
                 orientation: 'portrait',
                 unit: 'pt',
@@ -73,7 +82,7 @@ export const generatePDF = async (element, invoice, format = 'carta') => {
         pdf.addImage(imgData, 'PNG', xOffset, yOffset, finalWidth, finalHeight);
         const fileName = `Factura-${invoice.serie}-${invoice.numero}.pdf`;
         pdf.save(fileName);
-        console.log('PDF generado exitosamente');
+        console.log('PDF generado exitosamente sin bordes exteriores');
     }
     catch (error) {
         console.error('Error generating PDF:', error);

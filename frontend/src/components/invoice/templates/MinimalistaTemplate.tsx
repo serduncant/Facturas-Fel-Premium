@@ -29,7 +29,7 @@ export const MinimalistaTemplate: React.FC<MinimalistaTemplateProps> = ({
 
   return (
     <div 
-      className={`${containerClass} mx-auto bg-white p-8 md:p-12 shadow-2xl invoice-preview text-slate-900 font-sans rounded-2xl`}
+      className={`${containerClass} mx-auto bg-white p-8 md:p-12 shadow-2xl print:shadow-none print:border-0 print:rounded-none invoice-preview text-slate-900 font-sans rounded-2xl`}
       style={{ border: `1px solid ${borderColor}` }}
     >
       {/* Top Bar Label con Color Personalizado */}

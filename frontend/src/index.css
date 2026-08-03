@@ -19,39 +19,47 @@ body {
 @media print {
   @page {
     margin: 0;
-    size: auto;
+    size: letter portrait;
   }
 
-  body {
-    margin: 0;
-    padding: 0;
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
     background: #ffffff !important;
+    overflow: visible !important;
   }
 
-  /* Ocultar todos los elementos excepto la factura al imprimir */
-  body * {
-    visibility: hidden;
+  /* Ocultar elementos de interfaz de usuario durante la impresión */
+  .print\:hidden,
+  header,
+  aside,
+  nav,
+  button,
+  .no-print {
+    display: none !important;
   }
 
-  .invoice-preview,
-  .invoice-preview * {
-    visibility: visible;
-  }
-
-  .invoice-preview {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100% !important;
-    max-width: 100% !important;
+  /* Asegurar que el contenedor principal ocupe todo el espacio libre */
+  main, div {
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
-    border: none !important;
+    background: transparent !important;
+    overflow: visible !important;
   }
 
-  .print\:hidden {
-    display: none !important;
+  /* La previsualización de factura se imprime sin marcos de borde exterior ni sombras */
+  .invoice-preview {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
   }
 
   * {

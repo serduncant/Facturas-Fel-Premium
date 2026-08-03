@@ -29,5 +29,5 @@ export const InvoicePreview = ({ invoice, logo, format, footerText, headerColor,
     const containerClass = format === 'mediaCarta'
         ? 'w-[612px] media-carta-format'
         : 'w-[816px] carta-format';
-    return (_jsxs("div", { className: `${containerClass} mx-auto bg-white p-8 shadow-lg invoice-preview`, children: [_jsx(InvoiceHeader, { emisor: invoice.emisor, numero: invoice.numero, serie: invoice.serie, fecha: invoice.fecha, logo: logo, borderColor: borderColor }), _jsx(ClientInfo, { receptor: invoice.receptor, borderColor: borderColor }), _jsx(InvoiceItems, { items: invoice.items, total: invoice.total, headerColor: headerColor, borderColor: borderColor }), _jsx(InvoiceFooter, { invoice: invoice, footerText: footerText })] }));
+    return (_jsxs("div", { className: `${containerClass} mx-auto bg-white p-8 shadow-lg print:shadow-none print:border-0 print:rounded-none invoice-preview`, children: [_jsx(InvoiceHeader, { emisor: invoice.emisor, numero: invoice.numero, serie: invoice.serie, fecha: invoice.fecha, logo: logo, borderColor: borderColor }), _jsx(ClientInfo, { receptor: invoice.receptor, borderColor: borderColor }), _jsx(InvoiceItems, { items: invoice.items, total: invoice.total, headerColor: headerColor, borderColor: borderColor }), _jsx(InvoiceFooter, { invoice: invoice, footerText: footerText })] }));
 };

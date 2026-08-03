@@ -111,7 +111,7 @@ export const InvoicePreview: React.FC<InvoicePreviewProps> = ({
     : 'w-[816px] carta-format';
 
   return (
-    <div className={`${containerClass} mx-auto bg-white p-8 shadow-lg invoice-preview`}>
+    <div className={`${containerClass} mx-auto bg-white p-8 shadow-lg print:shadow-none print:border-0 print:rounded-none invoice-preview`}>
       <InvoiceHeader
         emisor={invoice.emisor}
         numero={invoice.numero}
