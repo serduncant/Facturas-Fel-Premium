@@ -16,9 +16,12 @@ export const useAdmin = () => {
         return;
       }
 
-      // Verificación directa para usuarios demo/admin locales
+      const emailLower = user.email.toLowerCase();
+
+      // Verificación directa para super admins y usuarios enterprise
       if (
-        user.email === 'admin@felpro.gt' || 
+        emailLower === 'xirmoll@gmail.com' ||
+        emailLower === 'admin@felpro.gt' || 
         user.uid === 'admin_demo_uid' || 
         userData?.plan === 'enterprise'
       ) {
@@ -29,7 +32,7 @@ export const useAdmin = () => {
 
       try {
         if (db) {
-          const adminDoc = await getDoc(doc(db, 'admins', user.email));
+          const adminDoc = await getDoc(doc(db, 'admins', emailLower));
           if (adminDoc.exists() && adminDoc.data()?.role === 'admin') {
             setIsAdmin(true);
             setLoading(false);

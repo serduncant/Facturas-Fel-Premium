@@ -82,17 +82,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (currentUser) {
               setUser(currentUser);
               try {
+                const isSuperAdmin = currentUser.email?.toLowerCase() === 'xirmoll@gmail.com';
                 const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
                 if (userDoc.exists()) {
-                  setUserData(userDoc.data() as UserData);
+                  const data = userDoc.data() as UserData;
+                  if (isSuperAdmin) {
+                    data.plan = 'enterprise';
+                    data.invoiceLimit = 999999;
+                  }
+                  setUserData(data);
                 } else {
                   // Valores por defecto
                   const defaultData: UserData = {
                     email: currentUser.email || 'usuario@felpro.gt',
                     displayName: currentUser.displayName || 'Usuario FEL PRO',
-                    plan: 'free',
+                    plan: isSuperAdmin ? 'enterprise' : 'free',
                     invoiceCount: 0,
-                    invoiceLimit: 10,
+                    invoiceLimit: isSuperAdmin ? 999999 : 10,
                     createdAt: new Date().toISOString()
                   };
                   setUserData(defaultData);
